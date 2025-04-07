@@ -1,16 +1,12 @@
-## Hi there 👋
+# Building AI Trading Bots
 
-<!--
-**cits4404-group12/cits4404-group12** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+## CITS4404 Group12 Project members
 
-Here are some ideas to get you started:
-
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+| UWA ID  | Name | Github Username |
+|---------|------|-----------------|
+|23621647 |Martin Evans||
+|23832119 |Chunming Liu||
+|23873626 |Ramachandran Nisari||
+|24090236 |Tagintsev Konstantin|ktagintsev|
+|23614859 |Williams Freddy||
+|23957505 |Wu Zongqi||
