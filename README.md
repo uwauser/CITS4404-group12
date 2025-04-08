@@ -4,7 +4,7 @@
 
 | UWA ID  | Name | Github Username |
 |---------|------|-----------------|
-|23621647 |Martin Evans||
+|23621647 |Martin Evans|| Martin-EvansUWA
 |23832119 |Chunming Liu|chunmingliu0|
 |23873626 |Ramachandran Nisari|Nisari-NSR|
 |24090236 |Tagintsev Konstantin|ktagintsev|
