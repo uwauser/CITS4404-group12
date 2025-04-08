@@ -20,7 +20,7 @@ prices = btc_data['Close'].values
 def SMA(data, window):
     return np.convolve(data, np.ones(window) / window, mode='valid')
 
-# Evaluation function with enforced short < long logic
+# Evaluation function
 def evaluate_bot(params):
     short_window = int(abs(params[0])) + 1
     gap = int(abs(params[1])) + 1
