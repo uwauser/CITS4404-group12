@@ -1,0 +1,133 @@
+# Artificial Bee Colony
+1:  Initialize bee population and evaluate fitness
+2:  Set Best ← best bee, trial[i] ← 0 for all bees
+
+3:  repeat
+4:      For each employed bee i:
+5:          R ← Tweak(i, using random bee k ≠ i)
+6:          If Quality(R) > Quality(i): i ← R, trial[i] ← 0
+7:          Else: trial[i] += 1
+
+8:      For each onlooker bee (prob. selection):
+9:          R ← Tweak(i, using random bee k ≠ i)
+10:         If Quality(R) > Quality(i): i ← R, trial[i] ← 0
+11:         Else: trial[i] += 1
+
+12:     If trial[i] ≥ LIMIT: i ← NewRandomSolution(), trial[i] ← 0
+
+13:     If Quality(i) > Quality(Best): Best ← i
+
+14: until max iterations
+15: return Best
+
+# Cuckoo Search
+1:  Initialize nests, evaluate fitness, set Best ← best nest
+
+2:  repeat
+3:      For each nest i:
+4:          R ← Tweak(i, using Levy flight from Best)
+5:          If Quality(R) > Quality(i):
+6:              i ← R
+7:              If Quality(R) > Quality(Best): Best ← R
+
+8:      If Random(0,1) < pa: i ← NewRandomSolution()  # Abandon some nests
+
+9:  until max iterations
+10: return Best
+
+# Firefly
+1:  Initialize fireflies, evaluate fitness, set Best ← best firefly
+
+2:  repeat
+3:      For each firefly i:
+4:          For each firefly j:
+5:              If Quality(j) > Quality(i):
+6:                  R ← Tweak(i, toward j with β and noise)
+7:                  i ← R
+8:                  Update Quality(i)
+
+9:      If Quality(i) > Quality(Best): Best ← i
+
+10: until max iterations
+11: return Best
+
+# Grey Wolf
+1:  Initialize wolves, evaluate fitness
+2:  Identify α, β, δ ← top 3 wolves
+
+3:  repeat
+4:      a ← linearly decrease from 2 to 0
+5:      For each wolf i:
+6:          R ← Tweak(i, using α, β, δ hierarchy)
+7:          i ← R
+8:          Update Quality(i)
+
+9:      If Quality(i) > Quality(α): update α, β, δ
+
+10: until max iterations
+11: return α
+
+# Particle Swarm
+1:  Initialize particles, evaluate fitness
+2:  Set pbest[i] ← each particle, gbest ← best particle
+
+3:  repeat
+4:      For each particle i:
+5:          R ← Tweak(i, using pbest[i] and gbest)
+6:          i ← R
+7:          Evaluate Quality(i)
+
+8:          If Quality(i) > Quality(pbest[i]): pbest[i] ← i
+9:          If Quality(i) > Quality(gbest): gbest ← i
+
+10: until max iterations
+11: return gbest
+
+# Whale
+1:  Initialize whales, evaluate fitness, set Best ← best whale
+
+2:  repeat
+3:      a ← linearly decrease from 2 to 0
+4:      For each whale i:
+5:          With probability p:
+6:              If |A| < 1: R ← Tweak(i, toward Best)
+7:              Else:      R ← Tweak(i, toward random whale)
+8:          Else:          R ← SpiralTweak(i, around Best)
+9:          If Quality(R) > Quality(i):
+10:             i ← R
+11:             If Quality(i) > Quality(Best): Best ← i
+
+12: until max iterations
+13: return Best
+
+# Simulated Annealing
+1:  Initialize solution S, evaluate Quality(S), set Best ← S
+2:  Set temperature t ← initial_temp
+
+3:  repeat
+4:      R ← Tweak(S)
+5:      If Quality(R) > Quality(S) or Random(0,1) < exp((Quality(R) – Quality(S)) / t):
+6:          S ← R
+7:          If Quality(S) > Quality(Best): Best ← S
+8:      t ← cooling_rate × t
+
+9:  until evaluation budget or t is too low
+10: return Best
+
+# Quality
+1:  Extract weights w1–w4, params d1–d7, alpha
+2:  If total weight = 0: return 0
+
+3:  high ← weighted avg of LMA(d1), SMA(d2), EMA(d3, α), MACD(d4,d5,d6,α)
+4:  low ← SMA(d7)
+5:  signal ← high - low
+6:  triggers ← sign(signal) crossovers → buy/sell points
+
+7:  cash ← 1000, btc ← 0, fee ← 0.03
+8:  For each buy/sell where buy < sell:
+9:      btc ← (1–fee) × cash / price[buy],
+        cash ← (1–fee) × btc × price[sell], btc ← 0
+
+10: If btc > 0: cash ← (1–fee) × btc × price[-1]
+
+11: return cash
