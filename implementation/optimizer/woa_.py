@@ -6,7 +6,7 @@ from implementation.config import bounds, timeframes, woa_settings
 NUM_WHALES = woa_settings["NUM_WHALES"]
 MAX_ITER = woa_settings["MAX_ITER"]
 
-def whale(price_series):
+def whale(price_series, log=None):
     dim = len(bounds)
     whales = [np.array([random.uniform(low, high) for (low, high) in bounds]) for _ in range(NUM_WHALES)]
     fitness = [quality(w[:-1], downsample(price_series, timeframes[int(w[-1])])) for w in whales]
@@ -53,6 +53,9 @@ def whale(price_series):
                 if new_fit > best_fitness:
                     best_whale = new_pos
                     best_fitness = new_fit
+
+        if log is not None:
+            log.append(best_fitness)
 
         print(f"WOA Gen {gen+1:02d} | Best Profit: ${best_fitness:.2f} | TF: {timeframes[int(best_whale[-1])]}h")
 

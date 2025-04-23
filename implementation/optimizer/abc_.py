@@ -18,7 +18,7 @@ def clamp(solution):
     clamped.append(int(round(max(min(solution[-1], bounds[-1][1]), bounds[-1][0]))))
     return clamped
 
-def artificial_bee_colony(price_series):
+def artificial_bee_colony(price_series, log=None):
     population = [init_solution() for _ in range(NUM_BEES)]
     fitness = [quality(sol[:-1], downsample(price_series, timeframes[int(sol[-1])])) for sol in population]
     trial = [0] * NUM_BEES
@@ -70,6 +70,9 @@ def artificial_bee_colony(price_series):
         if fitness[best_idx] > best_fitness:
             best_solution = population[best_idx]
             best_fitness = fitness[best_idx]
+
+        if log is not None:
+            log.append(best_fitness)
 
         print(f"Gen {gen+1:02d} | Best Profit: ${best_fitness:.2f} | TF: {timeframes[int(best_solution[-1])]}h")
 

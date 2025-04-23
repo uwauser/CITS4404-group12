@@ -3,14 +3,13 @@ import numpy as np
 from implementation.utils import quality, downsample
 from implementation.config import bounds, timeframes, pso_settings
 
-# --- PSO Settings ---
 NUM_PARTICLES = pso_settings["NUM_PARTICLES"]
 MAX_ITER = pso_settings["MAX_ITER"]
 w = pso_settings["w"]
 c1 = pso_settings["c1"]
 c2 = pso_settings["c2"]
 
-def particle_swarm(price_series):
+def particle_swarm(price_series, log=None):
     dim = len(bounds)
     particles = [np.array([random.uniform(low, high) for (low, high) in bounds]) for _ in range(NUM_PARTICLES)]
     velocities = [np.zeros(dim) for _ in range(NUM_PARTICLES)]
@@ -46,6 +45,9 @@ def particle_swarm(price_series):
 
             if fit > gbest_fitness:
                 gbest, gbest_fitness = particles[i].copy(), fit
+
+        if log is not None:
+            log.append(gbest_fitness)
 
         print(f"PSO Gen {gen+1:02d} | Best Profit: ${gbest_fitness:.2f} | TF: {timeframes[int(gbest[-1])]}h")
 

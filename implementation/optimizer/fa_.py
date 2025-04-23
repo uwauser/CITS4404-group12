@@ -9,7 +9,7 @@ gamma = fa_settings["gamma"]
 beta0 = fa_settings["beta0"]
 alpha = fa_settings["alpha"]
 
-def firefly(price_series):
+def firefly(price_series, log=None):
     dim = len(bounds)
     fireflies = [np.array([random.uniform(low, high) for (low, high) in bounds]) for _ in range(NUM_FIREFLIES)]
     fitness = [quality(f[:-1], downsample(price_series, timeframes[int(f[-1])])) for f in fireflies]
@@ -32,6 +32,10 @@ def firefly(price_series):
                     fitness[i] = quality(fireflies[i][:-1], downsample(price_series, tf))
 
         best_idx = np.argmax(fitness)
+
+        if log is not None:
+            log.append(fitness[best_idx])
+
         print(f"FA Gen {gen+1:02d} | Best Profit: ${fitness[best_idx]:.2f} | TF: {timeframes[int(fireflies[best_idx][-1])]}h")
 
     best_idx = np.argmax(fitness)

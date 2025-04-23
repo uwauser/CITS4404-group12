@@ -13,7 +13,7 @@ def levy_flight(Lambda):
     step = u / abs(v) ** (1 / Lambda)
     return step
 
-def cuckoo_search(price_series):
+def cuckoo_search(price_series, log=None):
     dim = len(bounds)
     nests = [np.array([random.uniform(low, high) for (low, high) in bounds]) for _ in range(NUM_NESTS)]
     fitness = [quality(n[:-1], downsample(price_series, timeframes[int(n[-1])])) for n in nests]
@@ -47,6 +47,9 @@ def cuckoo_search(price_series):
                 nests[i] = np.array([random.uniform(low, high) for (low, high) in bounds])
                 tf = timeframes[int(nests[i][-1])]
                 fitness[i] = quality(nests[i][:-1], downsample(price_series, tf))
+
+        if log is not None:
+            log.append(best_fitness)
 
         print(f"CS Gen {gen+1:02d} | Best Profit: ${best_fitness:.2f} | TF: {timeframes[int(best_nest[-1])]}h")
 

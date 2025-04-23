@@ -8,7 +8,7 @@ initial_temp = sa_settings["initial_temp"]
 cooling_rate = sa_settings["cooling_rate"]
 perturb_scale = sa_settings["perturb_scale"]
 
-def simulated_annealing(price_series):
+def simulated_annealing(price_series, log=None):
     eval_count = 0
     dim = len(bounds)
 
@@ -32,6 +32,9 @@ def simulated_annealing(price_series):
     best_sol, best_fit = curr_sol.copy(), curr_fit
     temp = initial_temp
 
+    if log is not None:
+        log.append(best_fit)
+
     while eval_count < MAX_EVALS:
         new_sol = perturb(curr_sol)
         new_fit = quality(new_sol[:-1], downsample(price_series, timeframes[int(new_sol[-1])]))
@@ -42,6 +45,9 @@ def simulated_annealing(price_series):
 
             if new_fit > best_fit:
                 best_sol, best_fit = new_sol.copy(), new_fit
+
+        if log is not None:
+            log.append(best_fit)
 
         temp *= cooling_rate
 

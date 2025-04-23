@@ -6,7 +6,7 @@ from implementation.config import bounds, timeframes, gwo_settings
 NUM_WOLVES = gwo_settings["NUM_WOLVES"]
 MAX_ITER = gwo_settings["MAX_ITER"]
 
-def grey_wolf(price_series):
+def grey_wolf(price_series, log=None):
     dim = len(bounds)
     wolves = [np.array([random.uniform(low, high) for (low, high) in bounds]) for _ in range(NUM_WOLVES)]
     fitness = [quality(w[:-1], downsample(price_series, timeframes[int(w[-1])])) for w in wolves]
@@ -40,6 +40,10 @@ def grey_wolf(price_series):
                 fitness[i] = new_fit
 
         best_idx = np.argmax(fitness)
+
+        if log is not None:
+            log.append(fitness[best_idx])
+
         print(f"GWO Gen {gen+1:02d} | Best Profit: ${fitness[best_idx]:.2f} | TF: {timeframes[int(wolves[best_idx][-1])]}h")
 
     best_idx = np.argmax(fitness)
