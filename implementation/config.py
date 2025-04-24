@@ -1,11 +1,8 @@
 
+seed = 42
 initial_cash = 1000
 fee = 0.03
 timeframes = [1, 6, 12, 24, 72, 168]
-
-verbose = True
-log_convergence = True
-random_seed = 42
 
 bounds = [
     (0.0, 3.0),  # w1

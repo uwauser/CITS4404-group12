@@ -1,4 +1,5 @@
 import numpy as np
+from config import seed
 
 def pad(prices, window):
     shape = prices[1:window] - prices[0]
@@ -43,7 +44,7 @@ def step_filter(window, amplitude=2.0):
     weights *= amplitude
     return weights
 
-def random_filter(window, seed=42):
+def random_filter(window):
     np.random.seed(seed)
     weights = np.random.rand(window)
     return weights / np.sum(weights)
