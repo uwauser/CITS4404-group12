@@ -1,12 +1,13 @@
 import random
 import numpy as np
 from implementation.utils import quality, downsample
-from implementation.config import bounds, timeframes, woa_settings
+from implementation.config import bounds, timeframes, settings
 
-NUM_WHALES = woa_settings["NUM_WHALES"]
-MAX_ITER = woa_settings["MAX_ITER"]
-
-def whale(price_series, log=None):
+def whale(price_series, log=None, setting=None):
+    if setting is None:
+        setting = settings["WOA"][0]
+    NUM_WHALES = setting["NUM_WHALES"]
+    MAX_ITER = setting["MAX_ITER"]
     dim = len(bounds)
     whales = [np.array([random.uniform(low, high) for (low, high) in bounds]) for _ in range(NUM_WHALES)]
     fitness = [quality(w[:-1], downsample(price_series, timeframes[int(w[-1])])) for w in whales]

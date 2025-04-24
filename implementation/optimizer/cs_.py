@@ -1,11 +1,7 @@
 import random
 import numpy as np
 from implementation.utils import quality, downsample
-from implementation.config import bounds, timeframes, cs_settings
-
-NUM_NESTS = cs_settings["NUM_NESTS"]
-MAX_ITER = cs_settings["MAX_ITER"]
-pa = cs_settings["pa"]
+from implementation.config import bounds, timeframes, settings
 
 def levy_flight(Lambda):
     u = np.random.normal(0, 1)
@@ -13,7 +9,13 @@ def levy_flight(Lambda):
     step = u / abs(v) ** (1 / Lambda)
     return step
 
-def cuckoo_search(price_series, log=None):
+def cuckoo_search(price_series, log=None, setting=None):
+    if setting is None:
+        setting = settings["CS"][0]
+    NUM_NESTS = setting["NUM_NESTS"]
+    MAX_ITER = setting["MAX_ITER"]
+    pa = setting["pa"]
+
     dim = len(bounds)
     nests = [np.array([random.uniform(low, high) for (low, high) in bounds]) for _ in range(NUM_NESTS)]
     fitness = [quality(n[:-1], downsample(price_series, timeframes[int(n[-1])])) for n in nests]

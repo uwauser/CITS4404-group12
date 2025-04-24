@@ -1,12 +1,13 @@
 import random
 import numpy as np
 from implementation.utils import quality, downsample
-from implementation.config import bounds, timeframes, gwo_settings
+from implementation.config import bounds, timeframes, settings
 
-NUM_WOLVES = gwo_settings["NUM_WOLVES"]
-MAX_ITER = gwo_settings["MAX_ITER"]
-
-def grey_wolf(price_series, log=None):
+def grey_wolf(price_series, log=None, setting=None):
+    if setting is None:
+        setting = settings["GWO"][0]
+    NUM_WOLVES = setting["NUM_WOLVES"]
+    MAX_ITER = setting["MAX_ITER"]
     dim = len(bounds)
     wolves = [np.array([random.uniform(low, high) for (low, high) in bounds]) for _ in range(NUM_WOLVES)]
     fitness = [quality(w[:-1], downsample(price_series, timeframes[int(w[-1])])) for w in wolves]

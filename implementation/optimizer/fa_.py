@@ -1,15 +1,16 @@
 import random
 import numpy as np
 from implementation.utils import quality, downsample
-from implementation.config import bounds, timeframes, fa_settings
+from implementation.config import bounds, timeframes, settings
 
-NUM_FIREFLIES = fa_settings["NUM_FIREFLIES"]
-MAX_ITER = fa_settings["MAX_ITER"]
-gamma = fa_settings["gamma"]
-beta0 = fa_settings["beta0"]
-alpha = fa_settings["alpha"]
-
-def firefly(price_series, log=None):
+def firefly(price_series, log=None, setting=None):
+    if setting is None:
+        setting = settings["FA"][0]
+    NUM_FIREFLIES = setting["NUM_FIREFLIES"]
+    MAX_ITER = setting["MAX_ITER"]
+    gamma = setting["gamma"]
+    beta0 = setting["beta0"]
+    alpha = setting["alpha"]
     dim = len(bounds)
     fireflies = [np.array([random.uniform(low, high) for (low, high) in bounds]) for _ in range(NUM_FIREFLIES)]
     fitness = [quality(f[:-1], downsample(price_series, timeframes[int(f[-1])])) for f in fireflies]

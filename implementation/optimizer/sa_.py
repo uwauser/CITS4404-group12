@@ -1,14 +1,15 @@
 import random
 import numpy as np
 from implementation.utils import quality, downsample
-from implementation.config import bounds, timeframes, sa_settings
+from implementation.config import bounds, timeframes, settings
 
-MAX_EVALS = sa_settings["MAX_EVALS"]
-initial_temp = sa_settings["initial_temp"]
-cooling_rate = sa_settings["cooling_rate"]
-perturb_scale = sa_settings["perturb_scale"]
-
-def simulated_annealing(price_series, log=None):
+def simulated_annealing(price_series, log=None, setting=None):
+    if setting is None:
+        setting = settings["SA"][0]
+    MAX_EVALS = setting["MAX_EVALS"]
+    initial_temp = setting["initial_temp"]
+    cooling_rate = setting["cooling_rate"]
+    perturb_scale = setting["perturb_scale"]
     eval_count = 0
     dim = len(bounds)
 

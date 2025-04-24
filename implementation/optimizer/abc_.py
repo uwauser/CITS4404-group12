@@ -1,12 +1,7 @@
 import random
 import numpy as np
 from implementation.utils import quality, downsample
-from implementation.config import bounds, timeframes, abc_settings
-
-NUM_BEES = abc_settings["NUM_BEES"]
-NUM_EMPLOYED = NUM_ONLOOKER = NUM_BEES // 2
-MAX_ITER = abc_settings["MAX_ITER"]
-LIMIT = abc_settings["LIMIT"]
+from implementation.config import bounds, timeframes, settings
 
 def init_solution():
     sol = [random.uniform(low, high) for low, high in bounds[:-1]]
@@ -18,7 +13,14 @@ def clamp(solution):
     clamped.append(int(round(max(min(solution[-1], bounds[-1][1]), bounds[-1][0]))))
     return clamped
 
-def artificial_bee_colony(price_series, log=None):
+def artificial_bee_colony(price_series, log=None, setting=None):
+    if setting is None:
+        setting = settings["ABC"][0]
+    NUM_BEES = setting["NUM_BEES"]
+    NUM_EMPLOYED = NUM_ONLOOKER = NUM_BEES // 2
+    MAX_ITER = setting["MAX_ITER"]
+    LIMIT = setting["LIMIT"]
+
     population = [init_solution() for _ in range(NUM_BEES)]
     fitness = [quality(sol[:-1], downsample(price_series, timeframes[int(sol[-1])])) for sol in population]
     trial = [0] * NUM_BEES

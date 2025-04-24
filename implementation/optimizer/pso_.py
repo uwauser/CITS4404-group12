@@ -1,15 +1,16 @@
 import random
 import numpy as np
 from implementation.utils import quality, downsample
-from implementation.config import bounds, timeframes, pso_settings
+from implementation.config import bounds, timeframes, settings
 
-NUM_PARTICLES = pso_settings["NUM_PARTICLES"]
-MAX_ITER = pso_settings["MAX_ITER"]
-w = pso_settings["w"]
-c1 = pso_settings["c1"]
-c2 = pso_settings["c2"]
-
-def particle_swarm(price_series, log=None):
+def particle_swarm(price_series, log=None, setting=None):
+    if setting is None:
+        setting = settings["PSO"][0]
+    NUM_PARTICLES = setting["NUM_PARTICLES"]
+    MAX_ITER = setting["MAX_ITER"]
+    w = setting["w"]
+    c1 = setting["c1"]
+    c2 = setting["c2"]
     dim = len(bounds)
     particles = [np.array([random.uniform(low, high) for (low, high) in bounds]) for _ in range(NUM_PARTICLES)]
     velocities = [np.zeros(dim) for _ in range(NUM_PARTICLES)]
