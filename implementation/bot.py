@@ -94,12 +94,17 @@ summary_df = pd.DataFrame(summary)
 print("\nSummary Table:")
 print(summary_df.to_string(index=False))
 
-
 n_settings = len(next(iter(all_results.values())))
 
-# --- Convergence Plot ---
+# --- Convergence Subplots: All Settings in One Figure ---
+n_cols = 2
+n_rows = int(np.ceil(n_settings / n_cols))
+
+fig, axes = plt.subplots(n_rows, n_cols, figsize=(14, 4 * n_rows), sharex=False)
+axes = axes.flatten()
+
 for setting_idx in range(n_settings):
-    plt.figure(figsize=(10, 6))
+    ax = axes[setting_idx]
     for name in all_results:
         logs = [np.array(run["log"]) for run in all_results[name][setting_idx] if run["log"]]
         if not logs:
@@ -107,82 +112,137 @@ for setting_idx in range(n_settings):
         min_len = min(map(len, logs))
         logs_trimmed = np.array([log[:min_len] for log in logs])
         mean_log = logs_trimmed.mean(axis=0)
-        plt.plot(mean_log, label=name)
-    plt.title(f"Average Convergence - Setting {setting_idx + 1}")
-    plt.xlabel("Generation / Evaluation")
-    plt.ylabel("Training Profit")
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
+        ax.plot(mean_log, label=name)
 
-# --- Boxplot of Test Profits ---
+    ax.set_title(f"Setting {setting_idx + 1}")
+    ax.set_xlabel("Generation / Evaluation")
+    ax.set_ylabel("Training Profit")
+    ax.grid(True)
+    ax.legend()
+
+for ax in axes[n_settings:]:
+    ax.axis('off')
+
+plt.tight_layout()
+plt.show()
+
+# --- Boxplots of Test Profits: All Settings in One Figure ---
+n_cols = 2
+n_rows = int(np.ceil(n_settings / n_cols))
+
+fig, axes = plt.subplots(n_rows, n_cols, figsize=(14, 4 * n_rows), sharex=False)
+axes = axes.flatten()
+
 for setting_idx in range(n_settings):
-    plt.figure(figsize=(10, 6))
+    ax = axes[setting_idx]
     data = [[run["info"]["profit"] for run in all_results[name][setting_idx]] for name in all_results]
-    plt.boxplot(data, tick_labels=all_results.keys())
-    plt.title(f"Test Profit Distribution - Setting {setting_idx + 1}")
-    plt.ylabel("Test Profit ($)")
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
+    ax.boxplot(data, tick_labels=list(all_results.keys()))
+    ax.set_title(f"Setting {setting_idx + 1}")
+    ax.set_ylabel("Test Profit ($)")
+    ax.grid(True)
 
-# --- Trade Count Bar Charts ---
+for ax in axes[n_settings:]:
+    ax.axis('off')
+
+plt.tight_layout()
+plt.show()
+
+# --- Trade Count Bar Charts: All Settings in One Figure ---
+n_cols = 2
+n_rows = int(np.ceil(n_settings / n_cols))
+
+fig, axes = plt.subplots(n_rows, n_cols, figsize=(14, 4 * n_rows), sharex=False)
+axes = axes.flatten()
+x = np.arange(len(all_results))
+width = 0.35
+optimizer_names = list(all_results.keys())
+
 for setting_idx in range(n_settings):
-    avg_buys = [np.mean([len(run["info"]["buy_points"]) for run in all_results[name][setting_idx]]) for name in all_results]
-    avg_sells = [np.mean([len(run["info"]["sell_points"]) for run in all_results[name][setting_idx]]) for name in all_results]
-    x = np.arange(len(all_results))
-    width = 0.35
+    ax = axes[setting_idx]
+    avg_buys = [np.mean([len(run["info"]["buy_points"]) for run in all_results[name][setting_idx]]) for name in optimizer_names]
+    avg_sells = [np.mean([len(run["info"]["sell_points"]) for run in all_results[name][setting_idx]]) for name in optimizer_names]
 
-    plt.figure(figsize=(10, 6))
-    plt.bar(x - width/2, avg_buys, width, label='Avg Buys', color='lightblue')
-    plt.bar(x + width/2, avg_sells, width, label='Avg Sells', color='lightcoral')
-    plt.xticks(x, all_results.keys())
-    plt.ylabel("Avg Number of Trades")
-    plt.title(f"Average Buys and Sells - Setting {setting_idx + 1}")
-    plt.legend()
-    plt.grid(True, axis='y')
-    plt.tight_layout()
-    plt.show()
+    ax.bar(x - width/2, avg_buys, width, label='Avg Buys', color='lightblue')
+    ax.bar(x + width/2, avg_sells, width, label='Avg Sells', color='lightcoral')
+    ax.set_xticks(x)
+    ax.set_xticklabels(optimizer_names)
+    ax.set_ylabel("Avg Number of Trades")
+    ax.set_title(f"Setting {setting_idx + 1}")
+    ax.legend()
+    ax.grid(True, axis='y')
 
-# --- Trade Signal Plots for Best Run ---
+for ax in axes[n_settings:]:
+    ax.axis('off')
+
+plt.tight_layout()
+plt.show()
+
+# --- Trade Signal Subplots per Setting (2 Columns) ---
 for setting_idx in range(n_settings):
-    for name in all_results:
-        best_run = max(all_results[name][setting_idx], key=lambda x: x["info"]["profit"])
+    n_optimizers = len(all_results)
+    n_cols = 2
+    n_rows = int(np.ceil(n_optimizers / n_cols))
+
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(16, 4 * n_rows))  # Removed sharex=True
+    axes = axes.flatten()
+    fig.suptitle(f"Trade Signals - Setting {setting_idx + 1}", fontsize=16)
+
+    for ax, (name, runs) in zip(axes, all_results.items()):
+        best_run = max(runs[setting_idx], key=lambda x: x["info"]["profit"])
         info = best_run["info"]
 
-        plt.figure(figsize=(12, 4))
-        plt.plot(info["price"], label="Price", alpha=0.6)
-        plt.plot(info["high"], label="High (Composite)", linewidth=1.5)
-        plt.plot(info["low"], label="Low (SMA)", linewidth=1.5)
-        plt.scatter(info["buy_points"], info["price"][info["buy_points"]], marker='^', color='green', label='Buy', s=60)
-        plt.scatter(info["sell_points"], info["price"][info["sell_points"]], marker='v', color='red', label='Sell', s=60)
-        plt.title(f"{name} - Setting {setting_idx + 1} | Best Test Profit: ${info['profit']:.2f}")
-        plt.legend()
-        plt.grid(True)
-        plt.tight_layout()
-        plt.show()
+        ax.plot(info["price"], label="Price", alpha=0.6)
+        ax.plot(info["high"], label="High (Composite)", linewidth=1.5)
+        ax.plot(info["low"], label="Low (SMA)", linewidth=1.5)
+        ax.scatter(info["buy_points"], info["price"][info["buy_points"]], marker='^', color='green', label='Buy', s=60)
+        ax.scatter(info["sell_points"], info["price"][info["sell_points"]], marker='v', color='red', label='Sell', s=60)
+        ax.set_title(f"{name} | Best Test Profit: ${info['profit']:.2f}")
+        ax.grid(True)
+        ax.legend()
 
-# --- Drawdown Plots for Best Runs ---
+    for ax in axes[len(all_results):]:
+        ax.axis('off')
+
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
+    plt.show()
+
+# --- Combined Equity + Drawdown Subplots (2 Columns) ---
 for setting_idx in range(n_settings):
-    plt.figure(figsize=(14, 6 * len(all_results)))
-    for idx, name in enumerate(all_results, 1):
-        best_run = max(all_results[name][setting_idx], key=lambda x: x["info"]["profit"])
+    n_optimizers = len(all_results)
+    n_cols = 2
+    n_rows = int(np.ceil(n_optimizers / n_cols))
+
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(16, 4 * n_rows))
+    axes = axes.flatten()
+    fig.suptitle(f"Equity & Drawdown - Setting {setting_idx + 1}", fontsize=16)
+
+    for ax, (name, runs) in zip(axes, all_results.items()):
+        best_run = max(runs[setting_idx], key=lambda x: x["info"]["profit"])
         info = best_run["info"]
 
-        plt.subplot(len(all_results), 2, 2 * idx - 1)
-        plt.plot(info["equity"], label="Equity Curve", color='blue')
-        plt.title(f"{name} - Setting {setting_idx + 1} - Equity")
-        plt.grid(True)
-        plt.legend()
+        # Equity (left y-axis)
+        ln1 = ax.plot(info["equity"], label="Equity", color="blue")
+        ax.set_ylabel("Equity ($)", color="blue")
+        ax.tick_params(axis='y', labelcolor="blue")
+        ax.set_title(f"{name} | Profit: ${info['profit']:.2f}")
+        ax.grid(True)
 
-        plt.subplot(len(all_results), 2, 2 * idx)
-        plt.plot(np.array(info["drawdown"]) * 100, label="Drawdown (%)", color='red')
-        plt.title(f"{name} - Setting {setting_idx + 1} - Drawdown")
-        plt.grid(True)
-        plt.legend()
+        # Drawdown (right y-axis)
+        ax2 = ax.twinx()
+        ln2 = ax2.plot(np.array(info["drawdown"]) * 100, label="Drawdown (%)", color="red", linestyle="--")
+        ax2.set_ylabel("Drawdown (%)", color="red")
+        ax2.tick_params(axis='y', labelcolor="red")
 
-    plt.tight_layout()
+        # Combined legend
+        lines = ln1 + ln2
+        labels = [line.get_label() for line in lines]
+        ax.legend(lines, labels, loc="upper left")
+
+    # Hide unused subplots
+    for ax in axes[len(all_results):]:
+        ax.axis('off')
+
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
     plt.show()
 
 # --- Execution Time Comparison ---
