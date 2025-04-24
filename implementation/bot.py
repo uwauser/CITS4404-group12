@@ -305,13 +305,28 @@ for cfg_idx in range(n_configs):
     plt.show()
 
 # --- Execution Time Comparison Plot ---
-exec_times = [np.mean([res["exec_time"] for res in results[name]]) for name in optimizers]
+summary_df = pd.DataFrame(summary)
+optimizers_list = summary_df["Optimizer"].unique()
+configs = summary_df["Config ID"].unique()
+bar_width = 0.13
+x = np.arange(len(optimizers_list))
 
-plt.figure(figsize=(10, 6))
-plt.bar(optimizers.keys(), exec_times, color='steelblue')
-plt.ylabel("Average Execution Time per Run (seconds)")
-plt.title("Execution Time Comparison per Optimizer")
-plt.xticks(rotation=45)
-plt.grid(axis='y')
+plt.figure(figsize=(12, 6))
+
+for i, cfg_id in enumerate(configs):
+    cfg_times = []
+    for opt in optimizers_list:
+        match = summary_df[(summary_df["Optimizer"] == opt) & (summary_df["Config ID"] == cfg_id)]
+        if not match.empty:
+            cfg_times.append(match["Exec Time (s)"].values[0])
+        else:
+            cfg_times.append(0)  # fallback for missing config
+    plt.bar(x + i * bar_width, cfg_times, width=bar_width, label=f"Config {cfg_id}")
+
+plt.xticks(x + bar_width * (len(configs)-1)/2, optimizers_list)
+plt.ylabel("Avg Execution Time per Run (seconds)")
+plt.title("Execution Time per Optimizer and Config")
+plt.legend(title="Config ID")
+plt.grid(True, axis='y')
 plt.tight_layout()
 plt.show()
