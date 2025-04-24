@@ -12,26 +12,35 @@ def downsample(prices, interval):
     prices_trimmed = prices[:n * interval]
     return prices_trimmed.reshape(n, interval).mean(axis=1)
 
-def quality(params, prices, return_trades=False):
+def quality(params, prices, return_info=False):
     w1, w2, w3, w4 = params[:4]
     d1, d2, d3 = map(int, params[4:7])
     alpha = params[7]
     d4, d5, d6 = map(int, params[8:11])
     d7 = int(params[11])
 
-    high_components = []
     total_weight = w1 + w2 + w3 + w4
     if total_weight == 0:
-        return 0
+        return {
+            "profit": 0,
+            "price": [],
+            "high": [],
+            "low": [],
+            "buy_points": [],
+            "sell_points": [],
+            "equity": [],
+            "drawdown": []
+        } if return_info else 0
 
-    high_components.append(w1 * wma(prices, d1, lma_filter(d1)))
-    high_components.append(w2 * wma(prices, d2, sma_filter(d2)))
-    high_components.append(w3 * wma(prices, d3, ema_filter(d3, alpha)))
-    macd_line, _ = macd(prices, d4, d5, d6, alpha)
-    high_components.append(w4 * macd_line)
+    high_components = [
+        w1 * wma(prices, d1, lma_filter(d1)),
+        w2 * wma(prices, d2, sma_filter(d2)),
+        w3 * wma(prices, d3, ema_filter(d3, alpha)),
+        w4 * macd(prices, d4, d5, d6, alpha)[0]
+    ]
 
     min_len = min(map(len, high_components))
-    high = sum([h[-min_len:] for h in high_components]) / total_weight
+    high = sum(h[-min_len:] for h in high_components) / total_weight
     low = wma(prices, d7, sma_filter(d7))[-min_len:]
     price = prices[-min_len:]
 
@@ -55,7 +64,22 @@ def quality(params, prices, return_trades=False):
 
     cash = round(cash, 2)
 
-    return (cash, len(buy_points), len(sell_points)) if return_trades else cash
+    if not return_info:
+        return cash
+
+    equity = compute_equity_curve(price, buy_points, sell_points)
+    drawdown = compute_drawdown(equity)
+
+    return {
+        "profit": cash,
+        "price": price,
+        "high": high,
+        "low": low,
+        "buy_points": buy_points,
+        "sell_points": sell_points,
+        "equity": equity,
+        "drawdown": drawdown
+    }
 
 def compute_equity_curve(price, buy_points, sell_points, fee=0.03):
     cash, btc = 1000, 0

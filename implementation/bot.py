@@ -11,7 +11,7 @@ from optimizer.fa_ import firefly
 from optimizer.cs_ import cuckoo_search
 from optimizer.sa_ import simulated_annealing
 
-from utils import quality, downsample, compute_equity_curve, compute_drawdown
+from utils import quality, downsample
 from config import settings
 
 # --- Load & Prepare Data ---
@@ -44,7 +44,7 @@ all_results = {name: [] for name in optimizers}
 # --- Run Experiments ---
 for name, optimizer in optimizers.items():
     for idx, setting in enumerate(settings[name]):
-        print(f"\nRunning {name} - Config {idx+1}")
+        print(f"\nRunning {name} - Setting {idx+1}")
         results = []
         start_time = time.time()
 
@@ -52,73 +52,28 @@ for name, optimizer in optimizers.items():
             log = []
             best_params, train_profit, tf = optimizer(train_prices, log=log, setting=setting)
             test_ds_prices = downsample(test_prices, tf)
-            test_profit, buys, sells = quality(best_params[:-1], test_ds_prices, return_trades=True)
-
+            info = quality(best_params[:-1], test_ds_prices, return_info=True)
             results.append({
                 "train_profit": train_profit,
-                "test_profit": test_profit,
+                "info": info,
                 "params": best_params,
                 "timeframe": tf,
-                "log": log,
-                "buys": buys,
-                "sells": sells
+                "log": log
             })
 
         exec_time = (time.time() - start_time) / n_runs
-
-        all_results[name].append(results)
-
-        # --- Metrics Calculation ---
         train = [r["train_profit"] for r in results]
-        test = [r["test_profit"] for r in results]
-        buys = [r["buys"] for r in results]
-        sells = [r["sells"] for r in results]
+        test = [r["info"]["profit"] for r in results]
+        buys = [len(r["info"]["buy_points"]) for r in results]
+        sells = [len(r["info"]["sell_points"]) for r in results]
         convergence = [len(r["log"]) for r in results]
         timeframes = [r["timeframe"] for r in results]
         underperform = [p <= 1000 for p in test]
+        drawdowns = [np.mean(r["info"]["drawdown"]) * 100 for r in results]
 
-        drawdowns = []
-        for r in results:
-            tf = r["timeframe"]
-            test_ds_prices = downsample(test_prices, tf)
-
-            w1, w2, w3, w4 = r["params"][:4]
-            d1, d2, d3 = map(int, r["params"][4:7])
-            alpha = r["params"][7]
-            d4, d5, d6 = map(int, r["params"][8:11])
-            d7 = int(r["params"][11])
-
-            from filters import lma_filter, sma_filter, ema_filter, macd, wma
-            total_weight = w1 + w2 + w3 + w4
-            if total_weight == 0:
-                continue
-
-            high_components = [
-                w1 * wma(test_ds_prices, d1, lma_filter(d1)),
-                w2 * wma(test_ds_prices, d2, sma_filter(d2)),
-                w3 * wma(test_ds_prices, d3, ema_filter(d3, alpha)),
-                w4 * macd(test_ds_prices, d4, d5, d6, alpha)[0]
-            ]
-
-            min_len = min(map(len, high_components))
-            high = sum(h[-min_len:] for h in high_components) / total_weight
-            low = wma(test_ds_prices, d7, sma_filter(d7))[-min_len:]
-            price = test_ds_prices[-min_len:]
-
-            signal = high - low
-            cross = np.sign(signal)
-            triggers = np.convolve(cross, [1, -1], mode='valid')
-            buy_points = np.where(triggers == 2)[0]
-            sell_points = np.where(triggers == -2)[0]
-
-            equity = compute_equity_curve(price, buy_points, sell_points)
-            drawdown = compute_drawdown(equity)
-            drawdowns.append(np.mean(drawdown) * 100)
-
-        # --- Append Summary Row ---
         summary.append({
             "Optimizer": name,
-            "Config ID": idx + 1,
+            "Setting ID": idx + 1,
             "Avg Train": round(np.mean(train), 2),
             "Avg": round(np.mean(test), 2),
             "Max": round(np.max(test), 2),
@@ -132,27 +87,28 @@ for name, optimizer in optimizers.items():
             "Avg Drawdown (%)": round(np.mean(drawdowns), 2),
             "Exec Time (s)": round(exec_time, 2)
         })
+        all_results[name].append(results)
 
-# --- Print Summary ---
+# --- Summary Table ---
 summary_df = pd.DataFrame(summary)
 print("\nSummary Table:")
 print(summary_df.to_string(index=False))
 
-# --- Average Convergence Plot: All Optimizers per Config ---
-n_configs = len(next(iter(all_results.values())))
 
-for cfg_idx in range(n_configs):
+n_settings = len(next(iter(all_results.values())))
+
+# --- Convergence Plot ---
+for setting_idx in range(n_settings):
     plt.figure(figsize=(10, 6))
     for name in all_results:
-        runs = all_results[name][cfg_idx]
-        logs = [np.array(run["log"]) for run in runs if run["log"]]
+        logs = [np.array(run["log"]) for run in all_results[name][setting_idx] if run["log"]]
         if not logs:
             continue
         min_len = min(map(len, logs))
         logs_trimmed = np.array([log[:min_len] for log in logs])
         mean_log = logs_trimmed.mean(axis=0)
         plt.plot(mean_log, label=name)
-    plt.title(f"Average Convergence - Config {cfg_idx + 1}")
+    plt.title(f"Average Convergence - Setting {setting_idx + 1}")
     plt.xlabel("Generation / Evaluation")
     plt.ylabel("Training Profit")
     plt.legend()
@@ -160,30 +116,21 @@ for cfg_idx in range(n_configs):
     plt.tight_layout()
     plt.show()
 
-# --- Boxplot of Test Profits per Config Across Optimizers ---
-for cfg_idx in range(n_configs):
+# --- Boxplot of Test Profits ---
+for setting_idx in range(n_settings):
     plt.figure(figsize=(10, 6))
-    data = [  # Collect test profits from all optimizers for current config
-        [run["test_profit"] for run in all_results[name][cfg_idx]]
-        for name in all_results
-    ]
+    data = [[run["info"]["profit"] for run in all_results[name][setting_idx]] for name in all_results]
     plt.boxplot(data, tick_labels=all_results.keys())
-    plt.title(f"Test Profit Distribution - Config {cfg_idx + 1}")
+    plt.title(f"Test Profit Distribution - Setting {setting_idx + 1}")
     plt.ylabel("Test Profit ($)")
     plt.grid(True)
     plt.tight_layout()
     plt.show()
 
-# --- Trade Count Distribution per Config Across Optimizers ---
-for cfg_idx in range(n_configs):
-    avg_buys = [
-        np.mean([run["buys"] for run in all_results[name][cfg_idx]])
-        for name in all_results
-    ]
-    avg_sells = [
-        np.mean([run["sells"] for run in all_results[name][cfg_idx]])
-        for name in all_results
-    ]
+# --- Trade Count Bar Charts ---
+for setting_idx in range(n_settings):
+    avg_buys = [np.mean([len(run["info"]["buy_points"]) for run in all_results[name][setting_idx]]) for name in all_results]
+    avg_sells = [np.mean([len(run["info"]["sell_points"]) for run in all_results[name][setting_idx]]) for name in all_results]
     x = np.arange(len(all_results))
     width = 0.35
 
@@ -192,141 +139,68 @@ for cfg_idx in range(n_configs):
     plt.bar(x + width/2, avg_sells, width, label='Avg Sells', color='lightcoral')
     plt.xticks(x, all_results.keys())
     plt.ylabel("Avg Number of Trades")
-    plt.title(f"Average Buys and Sells - Config {cfg_idx + 1}")
+    plt.title(f"Average Buys and Sells - Setting {setting_idx + 1}")
     plt.legend()
     plt.grid(True, axis='y')
     plt.tight_layout()
     plt.show()
 
-# --- Best Trade Plots per Optimizer for Each Config ---
-for cfg_idx in range(n_configs):
+# --- Trade Signal Plots for Best Run ---
+for setting_idx in range(n_settings):
     for name in all_results:
-        best_run = max(all_results[name][cfg_idx], key=lambda x: x["test_profit"])
-        tf = best_run["timeframe"]
-        test_ds_prices = downsample(test_prices, tf)
-
-        w1, w2, w3, w4 = best_run["params"][:4]
-        d1, d2, d3 = map(int, best_run["params"][4:7])
-        alpha = best_run["params"][7]
-        d4, d5, d6 = map(int, best_run["params"][8:11])
-        d7 = int(best_run["params"][11])
-
-        from filters import lma_filter, sma_filter, ema_filter, macd, wma
-
-        total_weight = w1 + w2 + w3 + w4
-        if total_weight == 0:
-            continue
-
-        high_components = [
-            w1 * wma(test_ds_prices, d1, lma_filter(d1)),
-            w2 * wma(test_ds_prices, d2, sma_filter(d2)),
-            w3 * wma(test_ds_prices, d3, ema_filter(d3, alpha)),
-            w4 * macd(test_ds_prices, d4, d5, d6, alpha)[0]
-        ]
-
-        min_len = min(map(len, high_components))
-        high = sum(h[-min_len:] for h in high_components) / total_weight
-        low = wma(test_ds_prices, d7, sma_filter(d7))[-min_len:]
-        price = test_ds_prices[-min_len:]
-
-        signal = high - low
-        cross = np.sign(signal)
-        triggers = np.convolve(cross, [1, -1], mode='valid')
-        buy_points = np.where(triggers == 2)[0]
-        sell_points = np.where(triggers == -2)[0]
+        best_run = max(all_results[name][setting_idx], key=lambda x: x["info"]["profit"])
+        info = best_run["info"]
 
         plt.figure(figsize=(12, 4))
-        plt.plot(price, label="Price", alpha=0.6)
-        plt.plot(high, label="High (Composite)", linewidth=1.5)
-        plt.plot(low, label="Low (SMA)", linewidth=1.5)
-        plt.scatter(buy_points, price[buy_points], marker='^', color='green', label='Buy', s=60)
-        plt.scatter(sell_points, price[sell_points], marker='v', color='red', label='Sell', s=60)
-        plt.title(f"{name} - Config {cfg_idx + 1} | Best Test Profit: ${best_run['test_profit']:.2f}")
+        plt.plot(info["price"], label="Price", alpha=0.6)
+        plt.plot(info["high"], label="High (Composite)", linewidth=1.5)
+        plt.plot(info["low"], label="Low (SMA)", linewidth=1.5)
+        plt.scatter(info["buy_points"], info["price"][info["buy_points"]], marker='^', color='green', label='Buy', s=60)
+        plt.scatter(info["sell_points"], info["price"][info["sell_points"]], marker='v', color='red', label='Sell', s=60)
+        plt.title(f"{name} - Setting {setting_idx + 1} | Best Test Profit: ${info['profit']:.2f}")
         plt.legend()
         plt.grid(True)
         plt.tight_layout()
         plt.show()
 
-# --- Drawdown Plots for Best Run of Each Optimizer (Subplots per Config) ---
-for cfg_idx in range(n_configs):
-    plt.figure(figsize=(14, 6 * len(all_results)))  # One config, all optimizers vertically stacked
-
+# --- Drawdown Plots for Best Runs ---
+for setting_idx in range(n_settings):
+    plt.figure(figsize=(14, 6 * len(all_results)))
     for idx, name in enumerate(all_results, 1):
-        best_run = max(all_results[name][cfg_idx], key=lambda x: x["test_profit"])
-        tf = best_run["timeframe"]
-        test_ds_prices = downsample(test_prices, tf)
-
-        w1, w2, w3, w4 = best_run["params"][:4]
-        d1, d2, d3 = map(int, best_run["params"][4:7])
-        alpha = best_run["params"][7]
-        d4, d5, d6 = map(int, best_run["params"][8:11])
-        d7 = int(best_run["params"][11])
-
-        from filters import lma_filter, sma_filter, ema_filter, macd, wma
-
-        total_weight = w1 + w2 + w3 + w4
-        if total_weight == 0:
-            continue
-
-        high_components = [
-            w1 * wma(test_ds_prices, d1, lma_filter(d1)),
-            w2 * wma(test_ds_prices, d2, sma_filter(d2)),
-            w3 * wma(test_ds_prices, d3, ema_filter(d3, alpha)),
-            w4 * macd(test_ds_prices, d4, d5, d6, alpha)[0]
-        ]
-
-        min_len = min(map(len, high_components))
-        high = sum([h[-min_len:] for h in high_components]) / total_weight
-        low = wma(test_ds_prices, d7, sma_filter(d7))[-min_len:]
-        price = test_ds_prices[-min_len:]
-
-        signal = high - low
-        cross = np.sign(signal)
-        triggers = np.convolve(cross, [1, -1], mode='valid')
-        buy_points = np.where(triggers == 2)[0]
-        sell_points = np.where(triggers == -2)[0]
-
-        equity = compute_equity_curve(price, buy_points, sell_points)
-        drawdown = compute_drawdown(equity)
+        best_run = max(all_results[name][setting_idx], key=lambda x: x["info"]["profit"])
+        info = best_run["info"]
 
         plt.subplot(len(all_results), 2, 2 * idx - 1)
-        plt.plot(equity, label="Equity Curve", color='blue')
-        plt.title(f"{name} - Config {cfg_idx + 1} - Equity")
+        plt.plot(info["equity"], label="Equity Curve", color='blue')
+        plt.title(f"{name} - Setting {setting_idx + 1} - Equity")
         plt.grid(True)
         plt.legend()
 
         plt.subplot(len(all_results), 2, 2 * idx)
-        plt.plot(drawdown * 100, label="Drawdown (%)", color='red')
-        plt.title(f"{name} - Config {cfg_idx + 1} - Drawdown")
+        plt.plot(np.array(info["drawdown"]) * 100, label="Drawdown (%)", color='red')
+        plt.title(f"{name} - Setting {setting_idx + 1} - Drawdown")
         plt.grid(True)
         plt.legend()
 
     plt.tight_layout()
     plt.show()
 
-# --- Execution Time Comparison Plot ---
-summary_df = pd.DataFrame(summary)
-optimizers_list = summary_df["Optimizer"].unique()
-configs = summary_df["Config ID"].unique()
+# --- Execution Time Comparison ---
 bar_width = 0.13
-x = np.arange(len(optimizers_list))
+x = np.arange(len(summary_df["Optimizer"].unique()))
 
 plt.figure(figsize=(12, 6))
+for i, cfg_id in enumerate(summary_df["Setting ID"].unique()):
+    cfg_times = [
+        summary_df[(summary_df["Optimizer"] == opt) & (summary_df["Setting ID"] == cfg_id)]["Exec Time (s)"].values[0]
+        for opt in summary_df["Optimizer"].unique()
+    ]
+    plt.bar(x + i * bar_width, cfg_times, width=bar_width, label=f"Setting {cfg_id}")
 
-for i, cfg_id in enumerate(configs):
-    cfg_times = []
-    for opt in optimizers_list:
-        match = summary_df[(summary_df["Optimizer"] == opt) & (summary_df["Config ID"] == cfg_id)]
-        if not match.empty:
-            cfg_times.append(match["Exec Time (s)"].values[0])
-        else:
-            cfg_times.append(0)  # fallback for missing config
-    plt.bar(x + i * bar_width, cfg_times, width=bar_width, label=f"Config {cfg_id}")
-
-plt.xticks(x + bar_width * (len(configs)-1)/2, optimizers_list)
+plt.xticks(x + bar_width * (len(summary_df["Setting ID"].unique()) - 1) / 2, summary_df["Optimizer"].unique())
 plt.ylabel("Avg Execution Time per Run (seconds)")
-plt.title("Execution Time per Optimizer and Config")
-plt.legend(title="Config ID")
+plt.title("Execution Time per Optimizer and Setting")
+plt.legend(title="Setting ID")
 plt.grid(True, axis='y')
 plt.tight_layout()
 plt.show()
