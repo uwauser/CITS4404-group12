@@ -312,3 +312,24 @@ plt.legend(title="Setting")
 plt.grid(True, axis='y')
 plt.tight_layout()
 plt.show()
+
+# --- Best Parameters Summary ---
+best_params_summary = []
+
+for name in all_results:
+    for setting_idx, setting_runs in enumerate(all_results[name]):
+        # Find the best run (highest test profit)
+        best_run = max(setting_runs, key=lambda x: x["info"]["profit"])
+        best_params_summary.append({
+            "Optimizer": name,
+            "Setting ID": setting_idx + 1,
+            "Best Test Profit": round(best_run["info"]["profit"], 2),
+            "Best Params": best_run["params"],
+            "Timeframe (hours)": best_run["timeframe"]
+        })
+
+# Convert to DataFrame
+best_params_df = pd.DataFrame(best_params_summary)
+
+print("\nBest Parameters per Optimizer and Setting:")
+print(best_params_df.to_string(index=False))
