@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+from collections import Counter
+
 from optimizer.abc_ import artificial_bee_colony
 from optimizer.pso_ import particle_swarm
 from optimizer.gwo_ import grey_wolf
@@ -261,6 +263,52 @@ plt.xticks(x + bar_width * (len(summary_df["Setting ID"].unique()) - 1) / 2, sum
 plt.ylabel("Avg Execution Time per Run (seconds)")
 plt.title("Execution Time per Optimizer and Setting")
 plt.legend(title="Setting ID")
+plt.grid(True, axis='y')
+plt.tight_layout()
+plt.show()
+
+# --- Underperformance Rate per Optimizer per Setting ---
+bar_width = 0.13
+optimizers_list = summary_df["Optimizer"].unique()
+settings_list = summary_df["Setting ID"].unique()
+x = np.arange(len(optimizers_list))
+
+plt.figure(figsize=(12, 6))
+for i, setting_id in enumerate(settings_list):
+    underperf = [
+        summary_df[(summary_df["Optimizer"] == opt) & (summary_df["Setting ID"] == setting_id)]["Underperform (%)"].values[0]
+        for opt in optimizers_list
+    ]
+    plt.bar(x + i * bar_width, underperf, width=bar_width, label=f"Setting {setting_id}")
+
+plt.xticks(x + bar_width * (len(settings_list) - 1) / 2, optimizers_list)
+plt.ylabel("Underperformance Rate (%)")
+plt.title("Underperformance Rate per Optimizer per Setting")
+plt.legend(title="Setting ID")
+plt.grid(True, axis='y')
+plt.tight_layout()
+plt.show()
+
+# --- Most Frequent Timeframe per Optimizer per Setting ---
+bar_width = 0.13
+optimizers_list = summary_df["Optimizer"].unique()
+settings_list = summary_df["Setting ID"].unique()
+x = np.arange(len(optimizers_list))
+
+plt.figure(figsize=(12, 6))
+for i, setting_id in enumerate(settings_list):
+    tf_hours = [
+        summary_df[
+            (summary_df["Optimizer"] == opt) & (summary_df["Setting ID"] == setting_id)
+        ]["Timeframe (hours)"].values[0]
+        for opt in optimizers_list
+    ]
+    plt.bar(x + i * bar_width, tf_hours, width=bar_width, label=f"Setting {setting_id}")
+
+plt.xticks(x + bar_width * (len(settings_list) - 1) / 2, optimizers_list)
+plt.ylabel("Timeframe (hours)")
+plt.title("Most Frequent Timeframe per Optimizer per Setting")
+plt.legend(title="Setting")
 plt.grid(True, axis='y')
 plt.tight_layout()
 plt.show()
