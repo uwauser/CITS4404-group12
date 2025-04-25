@@ -1,7 +1,7 @@
 import random
 import numpy as np
-from implementation.utils import quality, downsample
-from implementation.config import bounds, timeframes, settings
+from utils import quality, downsample
+from config import bounds, timeframes, settings
 
 def simulated_annealing(price_series, log=None, setting=None):
     if setting is None:

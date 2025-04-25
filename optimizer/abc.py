@@ -1,7 +1,7 @@
 import random
 import numpy as np
-from implementation.utils import quality, downsample
-from implementation.config import bounds, timeframes, settings
+from utils import quality, downsample
+from config import bounds, timeframes, settings
 
 def init_solution():
     sol = [random.uniform(low, high) for low, high in bounds[:-1]]

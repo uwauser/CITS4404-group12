@@ -3,15 +3,13 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from collections import Counter
-
-from optimizer.abc_ import artificial_bee_colony
-from optimizer.pso_ import particle_swarm
-from optimizer.gwo_ import grey_wolf
-from optimizer.woa_ import whale
-from optimizer.fa_ import firefly
-from optimizer.cs_ import cuckoo_search
-from optimizer.sa_ import simulated_annealing
+from optimizer.abc import artificial_bee_colony
+from optimizer.pso import particle_swarm
+from optimizer.gwo import grey_wolf
+from optimizer.woa import whale
+from optimizer.fa import firefly
+from optimizer.cs import cuckoo_search
+from optimizer.sa import simulated_annealing
 
 from utils import quality, downsample
 from config import settings

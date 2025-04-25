@@ -1,7 +1,7 @@
 import random
 import numpy as np
-from implementation.utils import quality, downsample
-from implementation.config import bounds, timeframes, settings
+from utils import quality, downsample
+from config import bounds, timeframes, settings
 
 def levy_flight(Lambda):
     u = np.random.normal(0, 1)
