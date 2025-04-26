@@ -8,4 +8,7 @@
 *.acn
 *.lot
 *.toc
+venv
+.venv
 report/main.pdf
+dataset
