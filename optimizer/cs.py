@@ -43,7 +43,6 @@ def cuckoo_search(price_series, log=None, setting=None):
                     best_nest = new_nest
                     best_fitness = new_fit
 
-        # Abandon some nests
         for i in range(NUM_NESTS):
             if random.random() < pa:
                 nests[i] = np.array([random.uniform(low, high) for (low, high) in bounds])

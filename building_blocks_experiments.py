@@ -62,20 +62,17 @@ def test_and_plot_filter_against_SMA(prices, filter_func, name, window_high, win
     high = wma(prices, window_high, filter_func(window_high))
     low = wma(prices, window_low, sma_filter(window_low))
 
-    # Align lengths
     min_len = min(len(high), len(low))
     high = high[-min_len:]
     low = low[-min_len:]
     price = prices[-min_len:]
 
-    # Detect crossovers
     signal = high - low
     cross = np.sign(signal)
     triggers = np.convolve(cross, [1, -1], mode='valid')
     buy_points = np.where(triggers == 2)[0]
     sell_points = np.where(triggers == -2)[0]
 
-    # Plot
     plt.figure(figsize=(14, 6))
     plt.plot(price[-len(triggers):], label='Price', alpha=0.6, color='gray', marker='|')
     plt.plot(high[-len(triggers):], label=f'HIGH ({name})', linewidth=2)
@@ -99,13 +96,11 @@ def test_and_plot_filter_against_SMA(prices, filter_func, name, window_high, win
     print(summary_text)
 
 def test_and_plot_macd(macd, signal):
-    # Align lengths
     min_len = min(len(macd), len(signal))
     macd = macd[-min_len:]
     signal = signal[-min_len:]
     price = prices[-min_len:]
 
-    # Crossover logic
     macd_diff = macd - signal
     cross = np.sign(macd_diff)
     triggers = np.convolve(cross, [1, -1], mode='valid')
@@ -115,7 +110,6 @@ def test_and_plot_macd(macd, signal):
     result = profit(price[-len(triggers):], buy_points, sell_points)
     summary_text = f"MACD vs Signal\nBuy: {len(buy_points)}\nSell: {len(sell_points)}\nMoney left: ${result:.2f}"
 
-    # Plot
     plt.figure(figsize=(14, 6))
     plt.plot(macd, label='MACD Line', linewidth=2)
     plt.plot(signal, label='Signal Line', linewidth=2)

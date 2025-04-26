@@ -24,7 +24,6 @@ def firefly(price_series, log=None, setting=None):
                     rand = alpha * (np.random.rand(dim) - 0.5)
                     fireflies[i] = fireflies[i] + beta * (fireflies[j] - fireflies[i]) + rand
 
-                    # Clamp
                     for d in range(dim - 1):
                         fireflies[i][d] = max(min(fireflies[i][d], bounds[d][1]), bounds[d][0])
                     fireflies[i][-1] = int(round(max(min(fireflies[i][-1], bounds[-1][1]), bounds[-1][0])))

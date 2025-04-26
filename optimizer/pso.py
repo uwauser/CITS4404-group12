@@ -33,7 +33,6 @@ def particle_swarm(price_series, log=None, setting=None):
                              c2 * r2 * (gbest - particles[i]))
             particles[i] += velocities[i]
 
-            # Clamp
             for d in range(dim - 1):
                 particles[i][d] = max(min(particles[i][d], bounds[d][1]), bounds[d][0])
             particles[i][-1] = int(round(max(min(particles[i][-1], bounds[-1][1]), bounds[-1][0])))

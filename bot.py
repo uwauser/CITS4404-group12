@@ -14,7 +14,6 @@ from optimizer.sa import simulated_annealing
 from utils import quality, downsample
 from config import settings
 
-# --- Load & Prepare Data ---
 df = pd.read_csv("BTCUSD.csv")
 df['date'] = pd.to_datetime(df['date'])
 df = df.sort_values('date')
@@ -26,7 +25,6 @@ test_data = df[df['date'] >= split_date]
 train_prices = train_data['close'].dropna().values
 test_prices = test_data['close'].dropna().values
 
-# --- Setup ---
 optimizers = {
     "ABC": artificial_bee_colony,
     "PSO": particle_swarm,
@@ -41,7 +39,6 @@ n_runs = 10
 summary = []
 all_results = {name: [] for name in optimizers}
 
-# --- Run Experiments ---
 for name, optimizer in optimizers.items():
     for idx, setting in enumerate(settings[name]):
         print(f"\nRunning {name} - Setting {idx+1}")
@@ -89,14 +86,12 @@ for name, optimizer in optimizers.items():
         })
         all_results[name].append(results)
 
-# --- Summary Table ---
 summary_df = pd.DataFrame(summary)
 print("\nSummary Table:")
 print(summary_df.to_string(index=False))
 
 n_settings = len(next(iter(all_results.values())))
 
-# --- Convergence Subplots: All Settings in One Figure ---
 n_cols = 2
 n_rows = int(np.ceil(n_settings / n_cols))
 
@@ -126,7 +121,6 @@ for ax in axes[n_settings:]:
 plt.tight_layout()
 plt.show()
 
-# --- Boxplots of Test Profits: All Settings in One Figure ---
 n_cols = 2
 n_rows = int(np.ceil(n_settings / n_cols))
 
@@ -147,7 +141,6 @@ for ax in axes[n_settings:]:
 plt.tight_layout()
 plt.show()
 
-# --- Trade Count Bar Charts: All Settings in One Figure ---
 n_cols = 2
 n_rows = int(np.ceil(n_settings / n_cols))
 
@@ -177,13 +170,12 @@ for ax in axes[n_settings:]:
 plt.tight_layout()
 plt.show()
 
-# --- Trade Signal Subplots per Setting (2 Columns) ---
 for setting_idx in range(n_settings):
     n_optimizers = len(all_results)
     n_cols = 2
     n_rows = int(np.ceil(n_optimizers / n_cols))
 
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(16, 4 * n_rows))  # Removed sharex=True
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(16, 4 * n_rows))
     axes = axes.flatten()
     fig.suptitle(f"Trade Signals - Setting {setting_idx + 1}", fontsize=16)
 
@@ -206,7 +198,6 @@ for setting_idx in range(n_settings):
     plt.tight_layout(rect=[0, 0, 1, 0.96])
     plt.show()
 
-# --- Combined Equity + Drawdown Subplots (2 Columns) ---
 for setting_idx in range(n_settings):
     n_optimizers = len(all_results)
     n_cols = 2
@@ -220,32 +211,27 @@ for setting_idx in range(n_settings):
         best_run = max(runs[setting_idx], key=lambda x: x["info"]["profit"])
         info = best_run["info"]
 
-        # Equity (left y-axis)
         ln1 = ax.plot(info["equity"], label="Equity", color="blue")
         ax.set_ylabel("Equity ($)", color="blue")
         ax.tick_params(axis='y', labelcolor="blue")
         ax.set_title(f"{name} | Profit: ${info['profit']:.2f}")
         ax.grid(True)
 
-        # Drawdown (right y-axis)
         ax2 = ax.twinx()
         ln2 = ax2.plot(np.array(info["drawdown"]) * 100, label="Drawdown (%)", color="red", linestyle="--")
         ax2.set_ylabel("Drawdown (%)", color="red")
         ax2.tick_params(axis='y', labelcolor="red")
 
-        # Combined legend
         lines = ln1 + ln2
         labels = [line.get_label() for line in lines]
         ax.legend(lines, labels, loc="upper left")
 
-    # Hide unused subplots
     for ax in axes[len(all_results):]:
         ax.axis('off')
 
     plt.tight_layout(rect=[0, 0, 1, 0.96])
     plt.show()
 
-# --- Execution Time Comparison ---
 bar_width = 0.13
 x = np.arange(len(summary_df["Optimizer"].unique()))
 
@@ -265,7 +251,6 @@ plt.grid(True, axis='y')
 plt.tight_layout()
 plt.show()
 
-# --- Underperformance Rate per Optimizer per Setting ---
 bar_width = 0.13
 optimizers_list = summary_df["Optimizer"].unique()
 settings_list = summary_df["Setting ID"].unique()
@@ -287,7 +272,6 @@ plt.grid(True, axis='y')
 plt.tight_layout()
 plt.show()
 
-# --- Most Frequent Timeframe per Optimizer per Setting ---
 bar_width = 0.13
 optimizers_list = summary_df["Optimizer"].unique()
 settings_list = summary_df["Setting ID"].unique()
@@ -311,12 +295,10 @@ plt.grid(True, axis='y')
 plt.tight_layout()
 plt.show()
 
-# --- Best Parameters Summary ---
 best_params_summary = []
 
 for name in all_results:
     for setting_idx, setting_runs in enumerate(all_results[name]):
-        # Find the best run (highest test profit)
         best_run = max(setting_runs, key=lambda x: x["info"]["profit"])
         best_params_summary.append({
             "Optimizer": name,
@@ -326,7 +308,6 @@ for name in all_results:
             "Timeframe (hours)": best_run["timeframe"]
         })
 
-# Convert to DataFrame
 best_params_df = pd.DataFrame(best_params_summary)
 
 print("\nBest Parameters per Optimizer and Setting:")
