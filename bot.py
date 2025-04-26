@@ -1,8 +1,16 @@
+"""
+This script evaluates the performance of various optimization algorithms on financial data.
+It splits the data into training and testing sets, applies optimization algorithms, and
+analyzes their performance using metrics such as profit, drawdown, and execution time.
+The results are visualized using plots and summarized in tables.
+"""
+
 import time
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+# Import optimization algorithms
 from optimizer.abc import artificial_bee_colony
 from optimizer.pso import particle_swarm
 from optimizer.gwo import grey_wolf
@@ -11,20 +19,25 @@ from optimizer.fa import firefly
 from optimizer.cs import cuckoo_search
 from optimizer.sa import simulated_annealing
 
+# Import utility functions and configuration
 from utils import quality, downsample
 from config import settings
 
-df = pd.read_csv("BTCUSD.csv")
-df['date'] = pd.to_datetime(df['date'])
-df = df.sort_values('date')
+# Load and preprocess the dataset
+df = pd.read_csv("BTCUSD.csv")  # Load historical BTC/USD data
+df['date'] = pd.to_datetime(df['date'])  # Convert date column to datetime
+df = df.sort_values('date')  # Sort data by date
 
-split_date = pd.to_datetime('2020-01-01')
-train_data = df[df['date'] < split_date]
-test_data = df[df['date'] >= split_date]
+# Split data into training and testing sets
+split_date = pd.to_datetime('2020-01-01')  # Define the split date
+train_data = df[df['date'] < split_date]  # Training data before the split date
+test_data = df[df['date'] >= split_date]  # Testing data after the split date
 
+# Extract closing prices for training and testing
 train_prices = train_data['close'].dropna().values
 test_prices = test_data['close'].dropna().values
 
+# Define the optimization algorithms to evaluate
 optimizers = {
     "ABC": artificial_bee_colony,
     "PSO": particle_swarm,
@@ -35,21 +48,23 @@ optimizers = {
     "SA": simulated_annealing
 }
 
-n_runs = 10
-summary = []
-all_results = {name: [] for name in optimizers}
+n_runs = 10  # Number of runs for each optimizer and setting
+summary = []  # Summary of results for all optimizers and settings
+all_results = {name: [] for name in optimizers}  # Store detailed results for each optimizer
 
+# Iterate over each optimizer and its settings
 for name, optimizer in optimizers.items():
     for idx, setting in enumerate(settings[name]):
         print(f"\nRunning {name} - Setting {idx+1}")
-        results = []
-        start_time = time.time()
+        results = []  # Store results for the current optimizer and setting
+        start_time = time.time()  # Start timer for execution time measurement
 
+        # Perform multiple runs for the current optimizer and setting
         for run in range(n_runs):
-            log = []
+            log = []  # Log of the optimization process
             best_params, train_profit, tf = optimizer(train_prices, log=log, setting=setting)
-            test_ds_prices = downsample(test_prices, tf)
-            info = quality(best_params[:-1], test_ds_prices, return_info=True)
+            test_ds_prices = downsample(test_prices, tf)  # Downsample test prices based on timeframe
+            info = quality(best_params[:-1], test_ds_prices, return_info=True)  # Evaluate quality of results
             results.append({
                 "train_profit": train_profit,
                 "info": info,
@@ -58,7 +73,10 @@ for name, optimizer in optimizers.items():
                 "log": log
             })
 
+        # Calculate average execution time per run
         exec_time = (time.time() - start_time) / n_runs
+
+        # Aggregate results for the current optimizer and setting
         train = [r["train_profit"] for r in results]
         test = [r["info"]["profit"] for r in results]
         buys = [len(r["info"]["buy_points"]) for r in results]
@@ -68,6 +86,7 @@ for name, optimizer in optimizers.items():
         underperform = [p <= 1000 for p in test]
         drawdowns = [np.mean(r["info"]["drawdown"]) * 100 for r in results]
 
+        # Append summary statistics for the current optimizer and setting
         summary.append({
             "Optimizer": name,
             "Setting ID": idx + 1,
@@ -84,17 +103,19 @@ for name, optimizer in optimizers.items():
             "Avg Drawdown (%)": round(np.mean(drawdowns), 2),
             "Exec Time (s)": round(exec_time, 2)
         })
-        all_results[name].append(results)
+        all_results[name].append(results)  # Store detailed results for the current optimizer
 
+# Create a summary DataFrame and display it
 summary_df = pd.DataFrame(summary)
 print("\nSummary Table:")
 print(summary_df.to_string(index=False))
 
+
 n_settings = len(next(iter(all_results.values())))
 
+# Underperformance Rate
 n_cols = 2
 n_rows = int(np.ceil(n_settings / n_cols))
-
 fig, axes = plt.subplots(n_rows, n_cols, figsize=(14, 4 * n_rows), sharex=False)
 axes = axes.flatten()
 
@@ -121,9 +142,9 @@ for ax in axes[n_settings:]:
 plt.tight_layout()
 plt.show()
 
+# Plot the boxplots of test profits for each optimizer and setting
 n_cols = 2
 n_rows = int(np.ceil(n_settings / n_cols))
-
 fig, axes = plt.subplots(n_rows, n_cols, figsize=(14, 4 * n_rows), sharex=False)
 axes = axes.flatten()
 
@@ -232,9 +253,9 @@ for setting_idx in range(n_settings):
     plt.tight_layout(rect=[0, 0, 1, 0.96])
     plt.show()
 
+# Plot the average execution time for each optimizer and setting
 bar_width = 0.13
 x = np.arange(len(summary_df["Optimizer"].unique()))
-
 plt.figure(figsize=(12, 6))
 for i, cfg_id in enumerate(summary_df["Setting ID"].unique()):
     cfg_times = [
@@ -251,11 +272,11 @@ plt.grid(True, axis='y')
 plt.tight_layout()
 plt.show()
 
+# Plot the underperformance rate for each optimizer and setting
 bar_width = 0.13
 optimizers_list = summary_df["Optimizer"].unique()
 settings_list = summary_df["Setting ID"].unique()
 x = np.arange(len(optimizers_list))
-
 plt.figure(figsize=(12, 6))
 for i, setting_id in enumerate(settings_list):
     underperf = [
@@ -272,11 +293,11 @@ plt.grid(True, axis='y')
 plt.tight_layout()
 plt.show()
 
+# Plot the most frequent timeframe for each optimizer and setting
 bar_width = 0.13
 optimizers_list = summary_df["Optimizer"].unique()
 settings_list = summary_df["Setting ID"].unique()
 x = np.arange(len(optimizers_list))
-
 plt.figure(figsize=(12, 6))
 for i, setting_id in enumerate(settings_list):
     tf_hours = [
@@ -295,8 +316,8 @@ plt.grid(True, axis='y')
 plt.tight_layout()
 plt.show()
 
+# Display the best parameters for each optimizer and setting
 best_params_summary = []
-
 for name in all_results:
     for setting_idx, setting_runs in enumerate(all_results[name]):
         best_run = max(setting_runs, key=lambda x: x["info"]["profit"])

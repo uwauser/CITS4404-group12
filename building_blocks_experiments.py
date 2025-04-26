@@ -5,6 +5,18 @@ from filters import sma_filter, lma_filter, ema_filter, triangle_filter, gaussia
 from utils import downsample
 
 def profit(price, buy_points, sell_points, fee=0.01):
+    """
+    Calculate the profit from a series of buy and sell points.
+
+    Args:
+        price (array-like): Array of prices.
+        buy_points (array-like): Indices of buy points.
+        sell_points (array-like): Indices of sell points.
+        fee (float): Transaction fee as a fraction (default is 0.01).
+
+    Returns:
+        float: Final cash amount after all transactions.
+    """
     cash = 1000
     btc = 0
 
@@ -23,6 +35,14 @@ def profit(price, buy_points, sell_points, fee=0.01):
     return round(cash, 2)
 
 def plot_train_test_split(before_2020, after_2020, split_date):
+    """
+    Plot the training and testing dataset split.
+
+    Args:
+        before_2020 (DataFrame): Data before the split date.
+        after_2020 (DataFrame): Data after the split date.
+        split_date (datetime): The date used to split the dataset.
+    """
     plt.figure(figsize=(14, 6))
     plt.plot(before_2020['date'], before_2020['close'], label='Training (Before 2020)', color='blue')
     plt.plot(after_2020['date'], after_2020['close'], label='Testing (From 2020)', color='green')
@@ -36,7 +56,12 @@ def plot_train_test_split(before_2020, after_2020, split_date):
     plt.show()
 
 def plot_filter_weights(window):
+    """
+    Plot the weight profiles of various filters.
 
+    Args:
+        window (int): The size of the filter window.
+    """
     cols = 4
     rows = int(np.ceil(len(filter_funcs) / cols))
     fig, axs = plt.subplots(rows, cols, figsize=(18, 4 * rows))
@@ -59,6 +84,16 @@ def plot_filter_weights(window):
     plt.show()
 
 def test_and_plot_filter_against_SMA(prices, filter_func, name, window_high, window_low):
+    """
+    Test a filter against the SMA and plot the results.
+
+    Args:
+        prices (array-like): Array of price data.
+        filter_func (callable): The filter function to test.
+        name (str): Name of the filter.
+        window_high (int): Window size for the high filter.
+        window_low (int): Window size for the low filter (SMA).
+    """
     high = wma(prices, window_high, filter_func(window_high))
     low = wma(prices, window_low, sma_filter(window_low))
 
@@ -96,6 +131,13 @@ def test_and_plot_filter_against_SMA(prices, filter_func, name, window_high, win
     print(summary_text)
 
 def test_and_plot_macd(macd, signal):
+    """
+    Test the MACD against its signal line and plot the results.
+
+    Args:
+        macd (array-like): MACD line values.
+        signal (array-like): Signal line values.
+    """
     min_len = min(len(macd), len(signal))
     macd = macd[-min_len:]
     signal = signal[-min_len:]

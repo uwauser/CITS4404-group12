@@ -3,16 +3,47 @@ from filters import sma_filter, lma_filter, ema_filter, macd, wma
 from config import initial_cash, fee
 
 def pad(prices, window):
+    """
+    Pads the price series to ensure a consistent length for calculations.
+
+    Args:
+        prices (np.ndarray): The input price series.
+        window (int): The window size for padding.
+
+    Returns:
+        np.ndarray: The padded price series.
+    """
     shape = prices[1:window] - prices[0]
     padding = -np.flip(shape) + prices[0]
     return np.append(padding, prices)
 
 def downsample(prices, interval):
+    """
+    Downsamples the price series by averaging over specified intervals.
+
+    Args:
+        prices (np.ndarray): The input price series.
+        interval (int): The interval size for downsampling.
+
+    Returns:
+        np.ndarray: The downsampled price series.
+    """
     n = len(prices) // interval
     prices_trimmed = prices[:n * interval]
     return prices_trimmed.reshape(n, interval).mean(axis=1)
 
 def quality(params, prices, return_info=False):
+    """
+    Evaluates the quality of a trading strategy based on given parameters.
+
+    Args:
+        params (list): The parameters for the strategy.
+        prices (np.ndarray): The input price series.
+        return_info (bool, optional): Whether to return detailed information. Defaults to False.
+
+    Returns:
+        float or dict: The profit if `return_info` is False, otherwise a dictionary with detailed metrics.
+    """
     w1, w2, w3, w4 = params[:4]
     d1, d2, d3 = map(int, params[4:7])
     alpha = params[7]
@@ -82,6 +113,18 @@ def quality(params, prices, return_info=False):
     }
 
 def compute_equity_curve(price, buy_points, sell_points, fee=0.03):
+    """
+    Computes the equity curve for a trading strategy.
+
+    Args:
+        price (np.ndarray): The input price series.
+        buy_points (np.ndarray): Indices of buy points.
+        sell_points (np.ndarray): Indices of sell points.
+        fee (float, optional): The transaction fee. Defaults to 0.03.
+
+    Returns:
+        np.ndarray: The equity curve.
+    """
     cash, btc = 1000, 0
     equity_curve = np.zeros_like(price, dtype=float)
 
@@ -107,6 +150,15 @@ def compute_equity_curve(price, buy_points, sell_points, fee=0.03):
     return equity_curve
 
 def compute_drawdown(equity):
+    """
+    Computes the drawdown of an equity curve.
+
+    Args:
+        equity (np.ndarray): The equity curve.
+
+    Returns:
+        np.ndarray: The drawdown values.
+    """
     peak = np.maximum.accumulate(equity)
     drawdown = (peak - equity) / peak
     return drawdown
